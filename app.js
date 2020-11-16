@@ -134,14 +134,32 @@ app.post('/signup', function(req, res) {
   })
 });
 
-app.post('/login', passport.authenticate('local', { failureRedirect: '/login-failure', successRedirect: '/user' }), function(err, req, res, next) {
-  if(err) next(err);
+// app.post('/login', passport.authenticate('local', { failureRedirect: '/login-failure', successRedirect: '/user' }), function(err, req, res, next) {
+//   if(err) next(err);
+// });
+
+app.post('/login', function(req, res, next) {
+  passport.authenticate('local', function(err, user, info) {
+      if (err || !user) { 
+        console.log('Algun error');
+        return res.redirect('/login');
+      }
+      // NEED TO CALL req.login()!!!
+      req.login(user, function() {
+        // Manually save session before redirect. See bug https://github.com/expressjs/session/pull/69
+        req.session.save(function(){
+          console.log('Session forzada a guardar')
+          res.redirect('/user');
+        });
+      });
+  })(req, res, next)
 });
 
 
 app.get('/user', function(req, res) {
+  console.log('YYYYYYYYYYYYYY')
     if (req.isAuthenticated()) {
-        console.log(req.user)
+        console.log('IIIIIIIm here')
         res.render('user', { title: 'Express', username: req.user.username, password: req.user.user_password });
     } else {
         console.log('You are not authenticated');
@@ -150,15 +168,15 @@ app.get('/user', function(req, res) {
 });
 
 
-app.get('/login-failure', (req, res) => {
-  // res.send('You entered the wrong username or password.');
-  console.log('Fallaste');
-  res.redirect('/login');
-});
+// app.get('/login-failure', (req, res) => {
+//   // res.send('You entered the wrong username or password.');
+//   console.log('Fallaste');
+//   res.redirect('/login');
+// });
 
 app.get('/logout', (req, res) => {
   res.clearCookie('connect.sid');
-  // req.logout();
+  req.logout();
   req.session.destroy(function(err) {
     if(err) {
       throw err;
